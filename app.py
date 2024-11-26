@@ -2,8 +2,13 @@ from flask import Flask, request, jsonify
 from utils import extract_carnet_data
 import boto3
 import os
+import logging
 
 app = Flask(__name__)
+
+# Configurar el log de Flask para mostrar detalles de errores
+app.config['PROPAGATE_EXCEPTIONS'] = True
+logging.basicConfig(level=logging.DEBUG)
 
 # Configuración de AWS
 AWS_REGION = "us-east-1"
