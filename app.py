@@ -10,11 +10,25 @@ app = Flask(__name__)
 app.config['PROPAGATE_EXCEPTIONS'] = True
 logging.basicConfig(level=logging.DEBUG)
 
-# Configuración de AWS
-AWS_REGION = "us-east-1"
-BUCKET_NAME = "bankames3"
-s3_client = boto3.client('s3', region_name=AWS_REGION)
-textract_client = boto3.client('textract', region_name=AWS_REGION)
+# Configuración de AWS desde variables de entorno
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+BUCKET_NAME = os.environ.get("BUCKET_NAME", "bankames3")
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+
+# Crear clientes de AWS
+s3_client = boto3.client(
+    's3',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+)
+textract_client = boto3.client(
+    'textract',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+)
 
 @app.route('/process_carnet', methods=['POST'])
 def process_carnet():
@@ -68,4 +82,3 @@ def process_carnet():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
-

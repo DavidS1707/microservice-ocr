@@ -14,6 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app
 
+# Configurar variables de entorno para AWS
+ENV AWS_ACCESS_KEY_ID=<TU_ACCESS_KEY_ID>
+ENV AWS_SECRET_ACCESS_KEY=<TU_SECRET_ACCESS_KEY>
+
 EXPOSE 5000
 
 CMD ["python", "app.py"]
