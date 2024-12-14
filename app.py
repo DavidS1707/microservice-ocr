@@ -32,11 +32,9 @@ textract_client = boto3.client(
 
 @app.route('/process_carnet', methods=['POST'])
 def process_carnet():
-    # Verificar si las imágenes requeridas están presentes en la solicitud
     if 'anverso' not in request.files or 'reverso' not in request.files or 'selfie' not in request.files:
         return jsonify({"error": "Se requieren las imágenes de 'anverso', 'reverso' y 'selfie'"}), 400
 
-    # Archivos subidos
     files = {
         "anverso": request.files['anverso'],
         "reverso": request.files['reverso'],
@@ -45,16 +43,14 @@ def process_carnet():
 
     uploaded_files = {}
 
-    # Subir las imágenes al bucket S3
     try:
         for key, file in files.items():
             file_name = f"{key}_{file.filename}"
             s3_client.upload_fileobj(file, BUCKET_NAME, file_name, ExtraArgs={'ACL': 'public-read'})
-            uploaded_files[key] = f"s3://{BUCKET_NAME}/{file_name}"  # URL completa del archivo
+            uploaded_files[key] = f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{file_name}"
     except Exception as e:
         return jsonify({"error": f"Error subiendo las imágenes a S3: {str(e)}"}), 500
 
-    # Procesar las imágenes de anverso y reverso con Amazon Textract
     try:
         def analyze_image_s3(file_key):
             response = textract_client.analyze_document(
@@ -72,13 +68,33 @@ def process_carnet():
     except Exception as e:
         return jsonify({"error": f"Error procesando imágenes con Textract: {str(e)}"}), 500
 
-    # Extraer los datos procesados del OCR
     try:
         processed_data = extract_carnet_data(anverso_textract, reverso_textract)
-        processed_data["selfie_url"] = uploaded_files["selfie"]  # Agregar la URL de la selfie
+        processed_data["selfie_url"] = uploaded_files["selfie"]
         return jsonify(processed_data)
     except Exception as e:
         return jsonify({"error": f"Error procesando los datos del carnet: {str(e)}"}), 500
+
+@app.route('/upload_utility_images', methods=['POST'])
+def upload_utility_images():
+    if 'factura' not in request.files or 'qr' not in request.files:
+        return jsonify({"error": "Se requieren las imágenes de 'factura' y 'qr'"}), 400
+
+    files = {
+        "factura": request.files['factura'],
+        "qr": request.files['qr']
+    }
+
+    uploaded_files = {}
+
+    try:
+        for key, file in files.items():
+            file_name = f"{key}_{file.filename}"
+            s3_client.upload_fileobj(file, BUCKET_NAME, file_name, ExtraArgs={'ACL': 'public-read'})
+            uploaded_files[key] = f"https://{BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{file_name}"
+        return jsonify({"message": "Imágenes subidas correctamente", "uploaded_files": uploaded_files})
+    except Exception as e:
+        return jsonify({"error": f"Error subiendo las imágenes a S3: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
